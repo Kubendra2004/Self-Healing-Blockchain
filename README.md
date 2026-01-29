@@ -2,7 +2,7 @@
 
 A robust blockchain security framework featuring real-time attack detection, automated self-healing mechanisms, and a modern interactive dashboard.
 
-![Dashboard Preview] (<img width="1875" height="763" alt="image" src="https://github.com/user-attachments/assets/c567f1bb-7e37-4863-b7ed-e086d7b5938d" />)
+![Dashboard Preview] <img width="1875" height="763" alt="image" src="https://github.com/user-attachments/assets/c567f1bb-7e37-4863-b7ed-e086d7b5938d" />
 ## 🔗 Live Demo
 **[View Dashboard](https://Kubendra2004.github.io/Self-Healing-Blockchain/)**  
 *(Note: The live demo runs in "Demo Mode" with simulated data since it's hosted on GitHub Pages static hosting.)*
