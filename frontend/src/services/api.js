@@ -103,6 +103,20 @@ export const api = {
     }
     const res = await fetch(`${API_BASE_URL}/recovery/exit`, { method: 'POST' });
     return res.json();
+  },
+
+  // Simulate Attack
+  async simulateAttack(type, address) {
+    if (DEMO_MODE) {
+      await delay(600);
+      return { message: `Simulated ${type}`, success: true };
+    }
+    const res = await fetch(`${API_BASE_URL}/simulate/attack`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type, address })
+    });
+    return res.json();
   }
 };
 

@@ -854,3 +854,17 @@ body::before {
 .empty-state p {
   font-size: 0.9rem;
 }
+
+/* Simulator Styles */
+.attack-simulator { grid-column: span 1; }
+.attack-simulator .card-title-icon { background: rgba(239, 68, 68, 0.15); color: var(--accent-red); }
+.simulator-content { display: flex; flex-direction: column; gap: 1.25rem; }
+.simulator-desc { font-size: 0.9rem; color: var(--text-secondary); line-height: 1.5; }
+.simulator-controls { display: flex; flex-direction: column; gap: 1rem; }
+.simulator-select, .simulator-input { width: 100%; padding: 0.875rem 1rem; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; color: var(--text-primary); font-size: 0.95rem; font-family: inherit; transition: all var(--transition-fast); appearance: none; }
+.simulator-select:focus, .simulator-input:focus { outline: none; border-color: var(--accent-red); box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15); }
+.simulator-select option { background: #1f2937; color: white; }
+.simulator-btn { width: 100%; padding: 1rem; background: var(--gradient-danger); border: none; border-radius: 12px; color: white; font-size: 1rem; font-weight: 600; cursor: pointer; transition: all var(--transition-normal); display: flex; align-items: center; justify-content: center; gap: 0.5rem; margin-top: 0.5rem; }
+.simulator-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(239, 68, 68, 0.4); }
+.simulator-btn:active { transform: translateY(0); }
+.simulator-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }

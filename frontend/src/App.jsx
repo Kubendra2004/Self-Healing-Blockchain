@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import './index.css';
 import { api, isDemoMode } from './services/api';
+import { initSocket, subscribeToAlerts, subscribeToRecovery, disconnectSocket } from './services/socket';
 
 // Utility function to format time ago
 const timeAgo = (timestamp) => {
@@ -196,6 +197,61 @@ function MLDetections({ detections, loading }) {
   );
 }
 
+// Attack Simulator Component
+function AttackSimulator({ onSimulate, loading }) {
+  const [selectedAttack, setSelectedAttack] = useState('DDoS Attack');
+  const [customAddress, setCustomAddress] = useState('');
+
+  const handleSimulate = () => {
+    onSimulate(selectedAttack, customAddress || undefined);
+  };
+
+  return (
+    <div className="card attack-simulator">
+      <div className="card-header">
+        <div className="card-title">
+          <div className="card-title-icon">⚔️</div>
+          <h3>Attack Simulator</h3>
+        </div>
+      </div>
+      <div className="simulator-content">
+        <p className="simulator-desc">Trigger simulated attacks to test the self-healing response.</p>
+        
+        <div className="simulator-controls">
+          <select 
+            value={selectedAttack} 
+            onChange={(e) => setSelectedAttack(e.target.value)}
+            className="simulator-select"
+          >
+            <option value="DDoS Attack">🌊 DDoS Flood</option>
+            <option value="Reentrancy Attack">🔄 Reentrancy Attack</option>
+            <option value="Double Spend">💸 Double Spending</option>
+            <option value="High Frequency">🏎️ High Frequency Tx</option>
+            <option value="Sybil Attack">👥 Sybil Attack</option>
+            <option value="Gas Griefing">⛽ Gas Griefing</option>
+          </select>
+          
+          <input
+            type="text"
+            placeholder="Attacker Address (Optional)"
+            value={customAddress}
+            onChange={(e) => setCustomAddress(e.target.value)}
+            className="simulator-input"
+          />
+          
+          <button 
+            className="simulator-btn"
+            onClick={handleSimulate}
+            disabled={loading}
+          >
+            {loading ? '🚀 Launching...' : '🔥 Launch Attack'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // Recovery Controls Component
 function RecoveryControls({ onTrigger, onExit, recoveryMode, loading }) {
   return (
@@ -233,16 +289,6 @@ function RecoveryControls({ onTrigger, onExit, recoveryMode, loading }) {
             {loading ? '⏳' : '✅'} Exit Recovery
           </button>
         </div>
-        
-        <div className="recovery-info">
-          <h4>Recovery Mode Actions</h4>
-          <ul>
-            <li>Blacklist detected attackers</li>
-            <li>Apply security patches</li>
-            <li>Freeze suspicious contracts</li>
-            <li>Enable enhanced monitoring</li>
-          </ul>
-        </div>
       </div>
     </div>
   );
@@ -266,7 +312,7 @@ function Toast({ message, type, onClose }) {
 // Main App Component
 function App() {
   const [loading, setLoading] = useState(true);
-  const [recoveryLoading, setRecoveryLoading] = useState(false);
+  const [actionLoading, setActionLoading] = useState(false);
   const [recoveryMode, setRecoveryMode] = useState(false);
   const [attacks, setAttacks] = useState([]);
   const [blacklist, setBlacklist] = useState([]);
@@ -282,6 +328,25 @@ function App() {
   const removeToast = useCallback((id) => {
     setToasts(prev => prev.filter(t => t.id !== id));
   }, []);
+
+  // Socket Integration
+  useEffect(() => {
+    const socket = initSocket();
+    
+    if (socket) {
+      subscribeToAlerts((data) => {
+        setAttacks(prev => [data, ...prev].slice(0, 50));
+        addToast(`New Alert: ${data.type}`, 'error');
+      });
+
+      subscribeToRecovery((data) => {
+        setRecoveryMode(data.active);
+        addToast(data.active ? 'Recovery Mode Activated via Network' : 'Recovery Mode Deactivated', 'info');
+      });
+    }
+
+    return () => disconnectSocket();
+  }, [addToast]);
 
   // Fetch all data
   const fetchData = useCallback(async () => {
@@ -299,11 +364,12 @@ function App() {
       setMlDetections(mlRes.recentMLDetections || []);
     } catch (error) {
       console.error('Failed to fetch data:', error);
-      addToast('Failed to connect to backend', 'error');
+      // Don't show toast on initial load failure to avoid spamming
+      if (!loading) addToast('Failed to connect to backend', 'error');
     } finally {
       setLoading(false);
     }
-  }, [addToast]);
+  }, [addToast, loading]);
 
   useEffect(() => {
     fetchData();
@@ -313,7 +379,7 @@ function App() {
   }, [fetchData]);
 
   const handleTriggerRecovery = async () => {
-    setRecoveryLoading(true);
+    setActionLoading(true);
     try {
       await api.triggerRecovery();
       setRecoveryMode(true);
@@ -321,12 +387,12 @@ function App() {
     } catch (error) {
       addToast('Failed to trigger recovery mode', 'error');
     } finally {
-      setRecoveryLoading(false);
+      setActionLoading(false);
     }
   };
 
   const handleExitRecovery = async () => {
-    setRecoveryLoading(true);
+    setActionLoading(true);
     try {
       await api.exitRecovery();
       setRecoveryMode(false);
@@ -334,7 +400,29 @@ function App() {
     } catch (error) {
       addToast('Failed to exit recovery mode', 'error');
     } finally {
-      setRecoveryLoading(false);
+      setActionLoading(false);
+    }
+  };
+
+  const handleSimulateAttack = async (type, address) => {
+    setActionLoading(true);
+    try {
+      await api.simulateAttack(type, address);
+      addToast(`Simulated ${type} launched!`, 'success');
+      // If demo mode, manually add to list
+      if (isDemoMode()) {
+        const newAttack = {
+          type,
+          address: address || '0xSimulatedAttacker',
+          timestamp: Date.now(),
+          severity: ['DDoS', 'Double Spend'].some(t => type.includes(t)) ? 'critical' : 'medium'
+        };
+        setAttacks(prev => [newAttack, ...prev]);
+      }
+    } catch (error) {
+      addToast('Failed to simulate attack', 'error');
+    } finally {
+      setActionLoading(false);
     }
   };
 
@@ -372,12 +460,13 @@ function App() {
           <SystemStatus data={status} loading={loading} />
           <AttackAlerts attacks={attacks} loading={loading} />
           <BlacklistTable blacklist={blacklist} loading={loading} />
+          <AttackSimulator onSimulate={handleSimulateAttack} loading={actionLoading} />
           <MLDetections detections={mlDetections} loading={loading} />
           <RecoveryControls 
             onTrigger={handleTriggerRecovery}
             onExit={handleExitRecovery}
             recoveryMode={recoveryMode}
-            loading={recoveryLoading}
+            loading={actionLoading}
           />
         </div>
       </main>

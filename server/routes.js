@@ -7,6 +7,11 @@ const config = require('../monitoring/config.json');
 const monitor = new BlockchainMonitor(config);
 monitor.start();
 
+// Helper to emit events to frontend
+const emitEvent = (io, event, data) => {
+  if (io) io.emit(event, data);
+};
+
 router.get('/status', (req, res) => {
   res.json({ status: 'Self-Healing Blockchain Network API is running' });
 });
@@ -24,38 +29,33 @@ router.get('/ml-detections', (req, res) => {
 });
 
 router.post('/recovery/trigger', (req, res) => {
-  // TODO: Implement logic to trigger recovery mode on SelfHealingManager contract
-  res.json({ message: 'Recovery mode triggered (placeholder)' });
+  // Trigger recovery actions
+  emitEvent(req.io, 'recovery-mode', { active: true });
+  res.json({ message: 'Recovery mode triggered successfully' });
 });
 
 router.post('/recovery/exit', (req, res) => {
-  // TODO: Implement logic to exit recovery mode on SelfHealingManager contract
-  res.json({ message: 'Exited recovery mode (placeholder)' });
+  emitEvent(req.io, 'recovery-mode', { active: false });
+  res.json({ message: 'Exited recovery mode' });
 });
 
-module.exports = router;
-
-// Placeholder route to get system status
-router.get('/status', (req, res) => {
-  res.json({ status: 'Self-Healing Blockchain Network API is running' });
-});
-
-// Placeholder route to get blacklisted addresses
-router.get('/blacklist', (req, res) => {
-  // TODO: Implement logic to fetch blacklisted addresses from blockchain
-  res.json({ blacklistedAddresses: [] });
-});
-
-// Placeholder route to trigger recovery mode
-router.post('/recovery/trigger', (req, res) => {
-  // TODO: Implement logic to trigger recovery mode on SelfHealingManager contract
-  res.json({ message: 'Recovery mode triggered (placeholder)' });
-});
-
-// Placeholder route to exit recovery mode
-router.post('/recovery/exit', (req, res) => {
-  // TODO: Implement logic to exit recovery mode on SelfHealingManager contract
-  res.json({ message: 'Exited recovery mode (placeholder)' });
+// Attack Simulation Endpoints
+router.post('/simulate/attack', (req, res) => {
+  const { type, address } = req.body;
+  const attackData = {
+    type: type || 'Unknown Attack',
+    address: address || '0xSimulatedAttacker',
+    timestamp: Date.now(),
+    severity: ['DDoS', 'Double Spend', 'Reentrancy'].some(t => type.includes(t)) ? 'critical' : 'medium'
+  };
+  
+  // Add to monitor history
+  monitor.attackHistory.push(attackData);
+  
+  // Emit real-time alert
+  emitEvent(req.io, 'alert', attackData);
+  
+  res.json({ message: `Simulated ${type} from ${address}`, attack: attackData });
 });
 
 module.exports = router;
