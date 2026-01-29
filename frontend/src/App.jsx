@@ -383,7 +383,20 @@ function App() {
     try {
       await api.triggerRecovery();
       setRecoveryMode(true);
-      addToast('Recovery mode triggered successfully!', 'success');
+      
+      // Feature request: Clear alerts and add count to blocks
+      const alertCount = attacks.length;
+      if (alertCount > 0) {
+        setAttacks([]); // Clear alerts
+        setStatus(prev => ({
+          ...prev,
+          blocks: (prev?.blocks || 0) + alertCount,
+          threats: 0 // Also clear threat count
+        }));
+        addToast(`Recovery triggered! ${alertCount} threats neutralized & added to block count.`, 'success');
+      } else {
+        addToast('Recovery mode triggered successfully!', 'success');
+      }
     } catch (error) {
       addToast('Failed to trigger recovery mode', 'error');
     } finally {
