@@ -384,16 +384,24 @@ function App() {
       await api.triggerRecovery();
       setRecoveryMode(true);
       
-      // Feature request: Clear alerts and add count to blocks
+      // Feature request: Clear alerts, add to blacklist, and add count to blocks
       const alertCount = attacks.length;
       if (alertCount > 0) {
+        // Add attackers to blacklist
+        const newBlacklistItems = attacks.map(attack => ({
+          address: attack.address,
+          reason: attack.type,
+          date: new Date().toISOString().split('T')[0]
+        }));
+        setBlacklist(prev => [...newBlacklistItems, ...prev]);
+
         setAttacks([]); // Clear alerts
         setStatus(prev => ({
           ...prev,
           blocks: (prev?.blocks || 0) + alertCount,
           threats: 0 // Also clear threat count
         }));
-        addToast(`Recovery triggered! ${alertCount} threats neutralized & added to block count.`, 'success');
+        addToast(`Recovery triggered! ${alertCount} threats blacklisted & neutralized.`, 'success');
       } else {
         addToast('Recovery mode triggered successfully!', 'success');
       }
